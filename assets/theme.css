@@ -64,7 +64,7 @@ body {
     radial-gradient(1200px 700px at 78% -8%, #16203a 0%, transparent 55%),
     radial-gradient(900px 600px at 5% 8%, #17132a 0%, transparent 50%),
     var(--bg);
-  background-attachment: fixed;
+  background-attachment: fixed;   /* auf kleinen/Touch-Viewports unten deaktiviert */
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 18px;
@@ -257,6 +257,12 @@ a.topic-card:hover { transform: translateY(-4px); border-color: var(--border-str
 .mono { font-family: var(--font-mono); }
 .muted { color: var(--text-muted); }
 .stack > * + * { margin-top: 1rem; }
+
+/* background-attachment: fixed ist auf Mobil/Touch (v.a. iOS Safari) teuer
+   (Scroll-/Repaint-Ruckler). Dort auf normales Scrollen zurückfallen. */
+@media (max-width: 768px), (hover: none) {
+  body { background-attachment: scroll; }
+}
 
 /* Reduzierte Bewegung respektieren */
 @media (prefers-reduced-motion: reduce) {

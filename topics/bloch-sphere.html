@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../assets/theme.css" />
 
   <!-- KaTeX (nur CDN, kein Build) für saubere Formeln -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous" />
 
   <!-- ============================ Seitenspezifisches CSS ============================
        Nur was diese Seite zusätzlich zum Theme braucht: das Zwei-Spalten-Lab,
@@ -349,11 +349,11 @@
 
         <div class="slider-row">
           <div class="lbl"><span>θ &nbsp;(Polarwinkel)</span><span class="val" id="thetaVal">1.571 rad</span></div>
-          <input type="range" id="theta" min="0" max="3.14159265" step="0.001" value="1.5707963" />
+          <input type="range" id="theta" aria-label="Polarwinkel θ (Theta), 0 bis π" min="0" max="3.14159265" step="0.001" value="1.5707963" />
         </div>
         <div class="slider-row">
           <div class="lbl"><span>φ &nbsp;(Azimut / Phase)</span><span class="val" id="phiVal">0.000 rad</span></div>
-          <input type="range" id="phi" min="0" max="6.28318530" step="0.001" value="0" />
+          <input type="range" id="phi" aria-label="Azimutwinkel φ (Phi), 0 bis 2π" min="0" max="6.28318530" step="0.001" value="0" />
         </div>
 
         <div>
@@ -498,9 +498,9 @@
   </footer>
 
   <!-- ============================ Bibliotheken (nur CDN) ============================ -->
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" integrity="sha384-wagZhIFgY4hD+7awjQjR4e2E294y6J2HSnd8eTNc15ZubTeQeVRZwhQJ+W6hnBsf" crossorigin="anonymous"></script>
 
   <!-- ================================================================
        SEITEN-LOGIK
@@ -768,26 +768,44 @@
         const dir = toThree(vec).normalize();
         arrow.setDirection(dir);
         tip.position.copy(toThree(vec).multiplyScalar(R));
+        requestRender();
       }
 
-      // --- Render-Loop + Resize ---
+      // --- Render-Loop (bei Bedarf) + Resize ---
+      // Statt dauerhaft zu rendern, zeichnen wir nur neu, wenn sich wirklich
+      // etwas ändert: während einer Interaktion, im Damping-Nachlauf oder wenn
+      // requestRender() gerufen wird (z.B. Pfeil aktualisiert). Das spart
+      // CPU/GPU — gerade weil die Seite ZWEI Bühnen betreibt.
+      let renderRequested = true;   // einmal initial zeichnen
+      let interacting = false;
+      let settleFrames = 0;         // Nachlauf-Frames, bis das Damping steht
+      function requestRender() { renderRequested = true; }
+      controls.addEventListener('start',  function () { interacting = true; });
+      controls.addEventListener('end',    function () { interacting = false; settleFrames = 90; });
+      controls.addEventListener('change', requestRender);
+
       function resize() {
         const w = container.clientWidth, h = container.clientHeight;
         if (w === 0 || h === 0) return;
         renderer.setSize(w, h, false);
         camera.aspect = w/h; camera.updateProjectionMatrix();
+        requestRender();
       }
       const ro = new ResizeObserver(resize); ro.observe(container);
       resize();
 
       function loop() {
         requestAnimationFrame(loop);
-        controls.update();
-        renderer.render(scene, camera);
+        if (interacting || settleFrames > 0 || renderRequested) {
+          controls.update();                 // nötig, damit Damping nachläuft
+          renderer.render(scene, camera);
+          renderRequested = false;
+          if (!interacting && settleFrames > 0) settleFrames--;
+        }
       }
       loop();
 
-      return { setArrow, scene, camera };
+      return { setArrow, requestRender, scene, camera };
     }
 
     // Zwei Bühnen erstellen (Abschnitt c und d), Zustand teilen sie sich.
@@ -817,6 +835,13 @@
     let phi   = parseFloat(els.phi.value);
 
     function fmt(x, n=3) { return x.toFixed(n); }
+
+    // Kleine DOM-Helfer: Erklärtext ohne innerHTML zusammensetzen (kein
+    // HTML-Parsing, keine XSS-Fußangel, falls hier später dynamischer Text
+    // einfließt). replaceChildren akzeptiert Strings und Nodes gemischt.
+    function bold(t) { const b = document.createElement('b'); b.textContent = t; return b; }
+    function ket(t)  { const s = document.createElement('span'); s.className = 'ket'; s.textContent = t; return s; }
+    function setExplain() { els.explain.replaceChildren.apply(els.explain, arguments); }
 
     // Live-Zustandsgleichung + Wahrscheinlichkeiten + Pfeil aktualisieren
     function render() {
@@ -903,7 +928,7 @@
           theta = endAngles.theta; phi = endAngles.phi;
           animating = false; setGatesEnabled(true);
           syncSliders(); render();
-          els.explain.innerHTML = '<b>' + g.label + '</b> ' + g.note;
+          setExplain(bold(g.label), ' ' + g.note);
         }
       }
       requestAnimationFrame(step);
@@ -920,12 +945,12 @@
     document.getElementById('btnReset0').addEventListener('click', function () {
       if (animating) return;
       theta = 0; phi = 0; syncSliders(); render();
-      els.explain.innerHTML = 'Zurückgesetzt auf <span class="ket">|0⟩</span> (Nordpol, θ = 0).';
+      setExplain('Zurückgesetzt auf ', ket('|0⟩'), ' (Nordpol, θ = 0).');
     });
     document.getElementById('btnResetPlus').addEventListener('click', function () {
       if (animating) return;
       theta = Math.PI/2; phi = 0; syncSliders(); render();
-      els.explain.innerHTML = 'Gesetzt auf <span class="ket">|+⟩</span> (Äquator, θ = π/2, φ = 0).';
+      setExplain('Gesetzt auf ', ket('|+⟩'), ' (Äquator, θ = π/2, φ = 0).');
     });
 
     // Erstes Rendern
