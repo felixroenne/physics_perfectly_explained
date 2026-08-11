@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Physics, Perfectly Explained</title>
+  <meta name="description" content="Interaktive, visuell hochwertige Erklärungen komplexer physikalischer Konzepte — auf Master-Niveau, intuitiv statt auswendig." />
+  <meta name="color-scheme" content="dark" />
+  <!-- Geteiltes Theme: sorgt dafür, dass alle Unterseiten gleich aussehen -->
+  <link rel="stylesheet" href="assets/theme.css" />
+</head>
+<body>
+
+  <!-- ============================================================ Topbar -->
+  <header class="topbar">
+    <div class="wrap-wide">
+      <a class="brand" href="./index.html">
+        <span class="dot"></span>
+        <span>Physics, Perfectly Explained</span>
+      </a>
+      <nav>
+        <a href="#topics">Themen</a>
+        <a href="topics/bloch-sphere.html">Bloch-Kugel</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============================================================ Hero -->
+  <section class="wrap" style="padding-top: clamp(3rem, 9vw, 6rem);">
+    <p class="eyebrow">Interaktive Physik · Master-Niveau</p>
+    <h1>Komplexe Physik,<br />intuitiv verstanden.</h1>
+    <p class="lead">
+      Kein Formel-Auswendiglernen. Jedes Thema wird hier über eine
+      interaktive Visualisierung erklärt — Formeln stehen immer direkt
+      neben dem, was sie beschreiben. Du drehst, schiebst und probierst,
+      bis das Konzept <em>klick</em> macht.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ============================================================ Themen -->
+  <section id="topics" class="wrap-wide">
+    <div class="section-head" style="margin-bottom: 1.6rem;">
+      <span class="num">01</span>
+      <h2 style="margin: 0;">Themen</h2>
+    </div>
+
+    <div class="topic-grid">
+
+      <!-- LIVE: Bloch-Kugel -->
+      <a class="topic-card" href="topics/bloch-sphere.html">
+        <span class="tag">Quantencomputing</span>
+        <h3>Die Bloch-Kugel</h3>
+        <p>
+          Der Zustand eines Qubits als Punkt auf einer Kugel. Interaktive
+          3D-Kugel, Live-Zustandsgleichung, Gate-Playground.
+        </p>
+        <span class="go">Öffnen &rarr;</span>
+      </a>
+
+      <!-- COMING SOON — als Vorlage für weitere Themen. Um live zu gehen:
+           class="topic-card soon"  ->  class="topic-card"  und  href setzen. -->
+      <div class="topic-card soon">
+        <span class="tag">Quantencomputing</span>
+        <h3>Verschränkung</h3>
+        <p>
+          Warum zwei Qubits mehr sind als zwei einzelne Bloch-Kugeln —
+          Bell-Zustände und Nichtlokalität.
+        </p>
+        <span class="go">In Arbeit</span>
+      </div>
+
+      <div class="topic-card soon">
+        <span class="tag">Quantenalgorithmen</span>
+        <h3>Grovers Algorithmus</h3>
+        <p>
+          Suche in √N Schritten. Amplituden-Verstärkung geometrisch als
+          Spiegelungen dargestellt.
+        </p>
+        <span class="go">In Arbeit</span>
+      </div>
+
+    </div>
+
+    <p class="muted" style="margin-top: 1.8rem; font-size: 0.95rem;">
+      Weitere Themen folgen. Jedes bekommt eine eigene Unterseite im
+      gleichen Stil — technisch vorbereitet über
+      <code>topics/_TEMPLATE.html</code>.
+    </p>
+  </section>
+
+  <!-- ============================================================ Footer -->
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <p style="margin: 0;">
+        <strong style="color: var(--text-muted);">Physics, Perfectly Explained</strong>
+        — offene, interaktive Erklärungen. Läuft vollständig statisch auf
+        GitHub Pages, ohne Tracking.
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Die Bloch-Kugel — Physics, Perfectly Explained</title>
+  <meta name="description" content="Interaktive Erklärung der Bloch-Kugel: 3D-Zustandsvektor, Live-Zustandsgleichung, Gate-Playground. Für Einsteiger ins Quantencomputing auf Master-Niveau." />
+  <meta name="color-scheme" content="dark" />
+
+  <!-- Geteiltes Theme -->
+  <link rel="stylesheet" href="../assets/theme.css" />
+
+  <!-- KaTeX (nur CDN, kein Build) für saubere Formeln -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
+
+  <!-- ============================ Seitenspezifisches CSS ============================
+       Nur was diese Seite zusätzlich zum Theme braucht: das Zwei-Spalten-Lab,
+       die Regler und der 3D-Canvas.
+  ============================================================================= -->
+  <style>
+    /* Das interaktive "Lab": links 3D-Kugel, rechts Bedienfeld.
+       Wird auf Tablet/Mobil zu einer Spalte. */
+    .lab {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+      gap: var(--gap);
+      align-items: stretch;
+    }
+    @media (max-width: 900px) {
+      .lab { grid-template-columns: 1fr; }
+    }
+
+    /* 3D-Bühne */
+    .stage {
+      position: relative;
+      min-height: 440px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background:
+        radial-gradient(120% 120% at 50% 0%, #131a2b 0%, #0a0d14 70%);
+      overflow: hidden;
+    }
+    .stage canvas { display: block; width: 100%; height: 100%; }
+    .stage .hint {
+      position: absolute; left: 12px; bottom: 10px;
+      font-size: 0.76rem; color: var(--text-faint);
+      pointer-events: none; user-select: none;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .stage .hint svg { width: 14px; height: 14px; opacity: 0.7; }
+
+    /* Bedienfeld rechts */
+    .panel {
+      padding: 1.3rem 1.4rem 1.5rem;
+      display: flex; flex-direction: column; gap: 1.15rem;
+    }
+    .panel h3 { margin: 0; font-size: 1.05rem; }
+
+    /* Live-Zustandsgleichung ganz oben im Panel */
+    .state-eq {
+      background: color-mix(in srgb, var(--bg-soft) 70%, transparent);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      overflow-x: auto;
+      font-size: 1.05rem;
+      min-height: 3.1rem;
+      display: flex; align-items: center;
+    }
+
+    /* Regler */
+    .slider-row { display: flex; flex-direction: column; gap: 0.4rem; }
+    .slider-row .lbl {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 0.9rem; color: var(--text-muted);
+    }
+    .slider-row .lbl .val { font-family: var(--font-mono); color: var(--text); }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 6px; border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+      outline: none; cursor: pointer;
+      opacity: 0.92;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; border: 2px solid var(--accent);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: pointer;
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; border: 2px solid var(--accent); cursor: pointer;
+    }
+
+    /* Wahrscheinlichkeits-Balken für P(|0>) und P(|1>) */
+    .probs { display: flex; flex-direction: column; gap: 0.6rem; }
+    .prob {
+      display: grid; grid-template-columns: 3.4rem 1fr 3.6rem;
+      align-items: center; gap: 0.7rem; font-size: 0.92rem;
+    }
+    .prob .name { font-family: var(--font-mono); }
+    .prob .track {
+      height: 9px; border-radius: 999px; background: var(--bg-softer);
+      overflow: hidden;
+    }
+    .prob .fill { height: 100%; width: 0%; border-radius: 999px; transition: width 0.12s linear; }
+    .prob.p0 .fill { background: var(--accent-3); }
+    .prob.p1 .fill { background: var(--accent-warm); }
+    .prob .pct { text-align: right; font-family: var(--font-mono); color: var(--text); }
+
+    /* Gate-Buttons */
+    .gates {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem;
+    }
+    .gate-btn {
+      appearance: none; cursor: pointer;
+      background: var(--bg-softer);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.3rem;
+      font-family: var(--font-mono); font-size: 1.05rem; font-weight: 600;
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+    .gate-btn small { display: block; font-family: var(--font-sans); font-size: 0.66rem; font-weight: 500; color: var(--text-faint); margin-top: 2px; letter-spacing: 0.02em; }
+    .gate-btn:hover { border-color: var(--accent); transform: translateY(-2px); background: #202a3c; }
+    .gate-btn:active { transform: translateY(0); }
+    .gate-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+    .btn-ghost {
+      appearance: none; cursor: pointer;
+      background: transparent; border: 1px solid var(--border-strong);
+      color: var(--text-muted); border-radius: var(--radius-sm);
+      padding: 0.5rem 0.9rem; font-size: 0.85rem;
+      transition: color 0.12s, border-color 0.12s;
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+    /* Erklärbox: was hat das letzte Gate geometrisch getan? */
+    .gate-explain {
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--state-vec);
+      background: var(--bg-soft);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      min-height: 3.2rem;
+    }
+    .gate-explain b { color: #fff; }
+
+    .kbd-legend { font-size: 0.82rem; color: var(--text-faint); display:flex; gap: 1rem; flex-wrap: wrap; }
+    .kbd-legend span b { color: var(--text-muted); }
+
+    /* Kleine farbige Punkte für die Achslegende unter der Kugel */
+    .axis-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 0.8rem; }
+    .axis-legend .item { display: flex; align-items: center; gap: 0.4rem; }
+    .axis-legend .swatch { width: 10px; height: 10px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <!-- ============================================================ Topbar -->
+  <header class="topbar">
+    <div class="wrap-wide">
+      <a class="brand" href="../index.html">
+        <span class="dot"></span>
+        <span>Physics, Perfectly Explained</span>
+      </a>
+      <nav>
+        <a href="../index.html">← Alle Themen</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============================================================ Hero -->
+  <section class="wrap" style="padding-top: clamp(2.4rem, 6vw, 4rem); padding-bottom: 1rem;">
+    <p class="eyebrow">Quantencomputing · Grundlagen</p>
+    <h1>Die Bloch-Kugel</h1>
+    <p class="lead">
+      Der Zustand eines einzelnen Qubits lässt sich vollständig als
+      <em>ein Punkt auf der Oberfläche einer Kugel</em> darstellen. Diese
+      Seite baut die Kugel Schritt für Schritt auf — und lässt dich mit ihr
+      spielen, bis die Geometrie hinter der Formel sichtbar wird.
+    </p>
+    <p class="muted" style="font-size: 0.95rem;">
+      <span class="badge live">interaktiv</span>
+      &nbsp;Ziehe die Kugel mit der Maus. Schiebe die Regler. Klicke Gates.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ==================================================================
+       ABSCHNITT a) — Warum reicht eine Zahl nicht?
+  =================================================================== -->
+  <section class="wrap">
+    <div class="section-head"><span class="num">a</span><h2 style="margin:0;">Warum reicht eine einzige Zahl nicht?</h2></div>
+
+    <p>
+      Ein klassisches Bit ist eine Ja/Nein-Entscheidung: <code>0</code> oder
+      <code>1</code>. Eine einzige Zahl aus <code>{0, 1}</code> beschreibt es
+      vollständig. Man könnte meinen, ein Qubit sei einfach „eine Zahl
+      zwischen 0 und 1“ — eine Art Wahrscheinlichkeit. Das ist der erste, sehr
+      verbreitete Irrtum.
+    </p>
+
+    <p>
+      Ein Qubit lebt in einer <strong>Superposition</strong> der beiden
+      Basiszustände <span class="ket">|0⟩</span> und <span class="ket">|1⟩</span>.
+      Sein Zustand ist eine <em>Linearkombination mit komplexen Koeffizienten</em>:
+    </p>
+
+    <div class="formula" data-tex="|\psi\rangle = \alpha\,|0\rangle + \beta\,|1\rangle, \qquad \alpha,\beta \in \mathbb{C}"></div>
+
+    <p>
+      Die Zahlen <span class="mono">α</span> und <span class="mono">β</span>
+      heißen <strong>Amplituden</strong>. Sie sind nicht direkt beobachtbar.
+      Misst man das Qubit in der <span class="ket">{|0⟩, |1⟩}</span>-Basis,
+      erhält man <span class="ket">|0⟩</span> mit Wahrscheinlichkeit
+      <span class="mono">|α|²</span> und <span class="ket">|1⟩</span> mit
+      <span class="mono">|β|²</span> (Bornsche Regel). Da immer <em>etwas</em>
+      herauskommt, muss gelten:
+    </p>
+
+    <div class="formula" data-tex="|\alpha|^2 + |\beta|^2 = 1"></div>
+
+    <p>
+      Zwei komplexe Zahlen sind zunächst <strong>vier reelle Zahlen</strong>.
+      Das ist zu viel Information für die zwei Freiheitsgrade, die physikalisch
+      übrig bleiben. Im nächsten Abschnitt schmelzen wir diese vier Zahlen auf
+      genau zwei Winkel ein — und genau diese zwei Winkel sind die
+      Kugelkoordinaten der Bloch-Kugel.
+    </p>
+
+    <div class="callout insight">
+      <strong>Kernidee.</strong> Nicht die Wahrscheinlichkeit macht das Qubit
+      mächtig, sondern die <em>relative Phase</em> zwischen den Amplituden. Sie
+      ist der zweite Freiheitsgrad — und der Grund, warum wir eine ganze Kugel
+      brauchen und nicht nur eine Strecke von <span class="ket">|0⟩</span> nach
+      <span class="ket">|1⟩</span>.
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ==================================================================
+       ABSCHNITT b) — Herleitung der Parametrisierung
+  =================================================================== -->
+  <section class="wrap">
+    <div class="section-head"><span class="num">b</span><h2 style="margin:0;">Herleitung: warum genau diese Form?</h2></div>
+
+    <p>
+      Wir starten mit vier reellen Zahlen (den Real- und Imaginärteilen von
+      <span class="mono">α</span> und <span class="mono">β</span>) und entfernen
+      alles, was physikalisch keine Rolle spielt.
+    </p>
+
+    <h3>Schritt 1 — Betrag und Phase</h3>
+    <p>
+      Schreibe jede komplexe Amplitude in Polarform,
+      <span class="mono">α = r₀e^{iγ₀}</span> und
+      <span class="mono">β = r₁e^{iγ₁}</span>. Weil
+      <span class="mono">|α|² + |β|² = 1</span> gilt und
+      <span class="mono">r₀, r₁ ≥ 0</span>, liegen die beiden Beträge auf einem
+      Viertelkreis und lassen sich durch <em>einen</em> Winkel ausdrücken:
+    </p>
+    <div class="formula" data-tex="r_0 = \cos\tfrac{\theta}{2}, \qquad r_1 = \sin\tfrac{\theta}{2}, \qquad \theta \in [0,\pi]"></div>
+
+    <h3>Schritt 2 — Die globale Phase ist unsichtbar</h3>
+    <p>
+      Ein gemeinsamer Phasenfaktor <span class="mono">e^{iγ}</span> vor dem
+      ganzen Zustand ändert <em>keine</em> Messwahrscheinlichkeit und keinen
+      Erwartungswert — er ist prinzipiell nicht messbar. Wir dürfen ihn frei
+      wählen und ziehen ihn so, dass die Amplitude von
+      <span class="ket">|0⟩</span> reell und nicht-negativ wird. Übrig bleibt
+      nur die <strong>relative Phase</strong>
+      <span class="mono">φ = γ₁ − γ₀</span>:
+    </p>
+    <div class="formula" data-tex="|\psi\rangle = \cos\tfrac{\theta}{2}\,|0\rangle + e^{i\varphi}\sin\tfrac{\theta}{2}\,|1\rangle, \qquad \varphi \in [0, 2\pi)"></div>
+
+    <p>
+      Aus vier reellen Zahlen sind zwei geworden: die Normierung hat eine
+      entfernt, die globale Phase die zweite. Zwei reelle Parameter
+      <span class="mono">(θ, φ)</span> — das sind exakt die Koordinaten eines
+      Punktes auf einer Kugeloberfläche.
+    </p>
+
+    <h3>Schritt 3 — Warum der halbe Winkel?</h3>
+    <p>
+      Der auffälligste Teil ist das <span class="mono">θ/2</span>. Es sorgt
+      dafür, dass <strong>orthogonale Zustände genau gegenüberliegen</strong>.
+      Setze <span class="mono">θ = 0</span>: reines
+      <span class="ket">|0⟩</span> (Nordpol). Setze
+      <span class="mono">θ = π</span>: reines
+      <span class="ket">|1⟩</span> (Südpol). Im Hilbertraum stehen
+      <span class="ket">|0⟩</span> und <span class="ket">|1⟩</span> im Winkel
+      90° zueinander (sie sind orthogonal) — auf der Bloch-Kugel liegen sie
+      aber 180° auseinander. Der Faktor ½ übersetzt genau zwischen diesen
+      beiden Winkeln.
+    </p>
+
+    <div class="callout">
+      <strong>Der Bloch-Vektor.</strong> Ordnet man dem Zustand den Punkt
+      <span class="k" data-tex-inline="\vec r = (\sin\theta\cos\varphi,\ \sin\theta\sin\varphi,\ \cos\theta)"></span>
+      zu, ergibt sich ein Einheitsvektor. Seine Komponenten sind genau die
+      Erwartungswerte der Pauli-Operatoren:
+      <span class="k" data-tex-inline="r_x=\langle X\rangle,\ r_y=\langle Y\rangle,\ r_z=\langle Z\rangle"></span>.
+      Das ist keine willkürliche Zeichnung, sondern messbare Physik.
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ==================================================================
+       ABSCHNITT c) — Die interaktive Kugel
+  =================================================================== -->
+  <section class="wrap-wide">
+    <div class="section-head"><span class="num">c</span><h2 style="margin:0;">Die Kugel — dreh sie, schieb die Regler</h2></div>
+    <p class="wrap" style="padding-inline:0; margin-left:0;">
+      Alles hier ist live gekoppelt: Regler → Bloch-Vektor → Zustandsgleichung
+      → Messwahrscheinlichkeiten. Die drei Achsen tragen die sechs
+      wichtigsten Zustände.
+    </p>
+
+    <div class="lab">
+      <!-- 3D-Bühne -->
+      <div>
+        <div class="stage card" id="stage">
+          <div class="hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3m0 12v3M3 12h3m12 0h3"/><circle cx="12" cy="12" r="4"/></svg>
+            Ziehen zum Drehen · Scrollen zum Zoomen
+          </div>
+        </div>
+        <div class="axis-legend">
+          <span class="item"><span class="swatch" style="background: var(--axis-z)"></span> Z-Achse: |0⟩ (oben) / |1⟩ (unten)</span>
+          <span class="item"><span class="swatch" style="background: var(--axis-x)"></span> X-Achse: |+⟩ / |−⟩</span>
+          <span class="item"><span class="swatch" style="background: var(--axis-y)"></span> Y-Achse: |+i⟩ / |−i⟩</span>
+        </div>
+      </div>
+
+      <!-- Bedienfeld -->
+      <div class="panel card">
+        <div>
+          <h3>Live-Zustand</h3>
+          <div class="state-eq" id="stateEq"></div>
+        </div>
+
+        <div class="slider-row">
+          <div class="lbl"><span>θ &nbsp;(Polarwinkel)</span><span class="val" id="thetaVal">1.571 rad</span></div>
+          <input type="range" id="theta" min="0" max="3.14159265" step="0.001" value="1.5707963" />
+        </div>
+        <div class="slider-row">
+          <div class="lbl"><span>φ &nbsp;(Azimut / Phase)</span><span class="val" id="phiVal">0.000 rad</span></div>
+          <input type="range" id="phi" min="0" max="6.28318530" step="0.001" value="0" />
+        </div>
+
+        <div>
+          <h3 style="margin-bottom:0.6rem;">Messung in der Z-Basis</h3>
+          <div class="probs">
+            <div class="prob p0">
+              <span class="name">P(|0⟩)</span>
+              <span class="track"><span class="fill" id="p0fill"></span></span>
+              <span class="pct" id="p0pct">50%</span>
+            </div>
+            <div class="prob p1">
+              <span class="name">P(|1⟩)</span>
+              <span class="track"><span class="fill" id="p1fill"></span></span>
+              <span class="pct" id="p1pct">50%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ==================================================================
+       ABSCHNITT d) — Gate-Playground
+  =================================================================== -->
+  <section class="wrap-wide">
+    <div class="section-head"><span class="num">d</span><h2 style="margin:0;">Gate-Playground</h2></div>
+    <p class="wrap" style="padding-inline:0; margin-left:0;">
+      Quanten-Gates sind <strong>Drehungen der Bloch-Kugel</strong>. Klicke ein
+      Gate — der Zustandsvektor dreht sich <em>animiert</em> in seine neue Lage,
+      und darunter steht, was geometrisch passiert ist. Die Kugel oben und hier
+      teilen sich denselben Zustand.
+    </p>
+
+    <div class="lab">
+      <div>
+        <div class="stage card" id="stage2">
+          <div class="hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3m0 12v3M3 12h3m12 0h3"/><circle cx="12" cy="12" r="4"/></svg>
+            Dieselbe Kugel — Ansicht frei drehbar
+          </div>
+        </div>
+      </div>
+
+      <div class="panel card">
+        <div>
+          <h3 style="margin-bottom:0.7rem;">Gates anwenden</h3>
+          <div class="gates" id="gateButtons">
+            <button class="gate-btn" data-gate="H">H<small>Hadamard</small></button>
+            <button class="gate-btn" data-gate="X">X<small>Pauli-X</small></button>
+            <button class="gate-btn" data-gate="Y">Y<small>Pauli-Y</small></button>
+            <button class="gate-btn" data-gate="Z">Z<small>Pauli-Z</small></button>
+            <button class="gate-btn" data-gate="S">S<small>Phase π/2</small></button>
+            <button class="gate-btn" data-gate="T">T<small>Phase π/4</small></button>
+          </div>
+        </div>
+
+        <div class="gate-explain" id="gateExplain">
+          Noch kein Gate angewendet. Tipp: Starte in <span class="ket">|0⟩</span>
+          (θ = 0) und klicke <b>H</b> — daraus wird
+          <span class="ket">|+⟩</span> auf dem Äquator.
+        </div>
+
+        <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+          <button class="btn-ghost" id="btnReset0">Reset auf |0⟩</button>
+          <button class="btn-ghost" id="btnResetPlus">Setze auf |+⟩</button>
+        </div>
+
+        <p class="muted" style="font-size:0.82rem; margin:0;">
+          Konvention: Rotationen nach der rechten-Hand-Regel um die jeweilige
+          Achse, Vorzeichen wie bei
+          <span class="mono">R_n(θ)=e^{-iθ\,n·σ/2}</span> (Nielsen &amp; Chuang).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- ==================================================================
+       ABSCHNITT e) — Häufige Missverständnisse
+  =================================================================== -->
+  <section class="wrap">
+    <div class="section-head"><span class="num">e</span><h2 style="margin:0;">Häufige Missverständnisse</h2></div>
+
+    <h3>1. „Die globale Phase sieht man auf der Kugel.“</h3>
+    <p>
+      Nein — und das ist Absicht. Die Zustände <span class="ket">|ψ⟩</span> und
+      <span class="ket">e^{iγ}|ψ⟩</span> sind physikalisch identisch und landen
+      auf <em>demselben</em> Punkt. Genau darum haben wir die globale Phase in
+      der Herleitung weggeworfen. Sichtbar ist nur die <em>relative</em> Phase
+      <span class="mono">φ</span> — der Längengrad auf der Kugel.
+    </p>
+
+    <h3>2. „Die Bloch-Kugel ist normaler 3D-Raum.“</h3>
+    <p>
+      Sie sieht aus wie gewöhnlicher Anschauungsraum, ist aber der
+      Zustandsraum. Orthogonale (perfekt unterscheidbare) Zustände liegen sich
+      <em>gegenüber</em>, nicht im rechten Winkel:
+      <span class="ket">|0⟩</span>/<span class="ket">|1⟩</span>,
+      <span class="ket">|+⟩</span>/<span class="ket">|−⟩</span> und
+      <span class="ket">|+i⟩</span>/<span class="ket">|−i⟩</span> sind jeweils
+      Antipoden.
+    </p>
+
+    <h3>3. „Die Phase φ beeinflusst die Messung.“</h3>
+    <p>
+      In der Z-Basis nicht. <span class="mono">P(|0⟩) = cos²(θ/2)</span> hängt
+      allein von der <em>Breite</em> <span class="mono">θ</span> ab, nicht vom
+      <em>Längengrad</em> <span class="mono">φ</span>. Schiebe oben den
+      φ-Regler: Der Punkt wandert um den Äquator, die Balken bewegen sich
+      nicht. Die Phase wird erst sichtbar, wenn du in einer <em>anderen</em>
+      Basis misst (z. B. nach einem H-Gate).
+    </p>
+
+    <h3>4. „Zwei Qubits sind zwei Bloch-Kugeln.“</h3>
+    <p>
+      Nur solange sie <em>nicht verschränkt</em> sind. Ein allgemeiner
+      Zwei-Qubit-Zustand lebt in einem 4-dimensionalen komplexen Raum und lässt
+      sich im Allgemeinen <strong>nicht</strong> als Paar zweier Bloch-Vektoren
+      schreiben. Die Bloch-Kugel ist ein Werkzeug für <em>ein einzelnes reines
+      Qubit</em>. (Gemischte Zustände sitzen übrigens <em>innerhalb</em> der
+      Kugel — der Rand ist rein, das Zentrum maximal gemischt.)
+    </p>
+
+    <div class="callout insight">
+      <strong>Nächste Themen.</strong> Genau hier setzt
+      <em>Verschränkung</em> an — warum zwei Qubits mehr sind als zwei Kugeln.
+      Es bekommt eine eigene Unterseite im gleichen Stil.
+      <a href="../index.html">Zurück zur Themenübersicht →</a>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <p style="margin:0;">
+        Bloch-Kugel · <a href="../index.html">Physics, Perfectly Explained</a>
+        — 3D mit Three.js, Formeln mit KaTeX, alles statisch auf GitHub Pages.
+      </p>
+    </div>
+  </footer>
+
+  <!-- ============================ Bibliotheken (nur CDN) ============================ -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- ================================================================
+       SEITEN-LOGIK
+       Aufbau (von oben nach unten):
+         1. Quantenzustands-Mathematik (komplexe Amplituden, Gates)
+         2. Umrechnung Zustand <-> Bloch-Vektor <-> (theta, phi)
+         3. Three.js-Szene (Kugel, Achsen, Beschriftungen, Pfeil)
+         4. UI-Verdrahtung (Regler, Gate-Buttons, KaTeX-Ausgabe)
+         5. Gate-Animation (Quaternion-Rotation des Vektors)
+       Alles ist bewusst modular gehalten, damit weitere Konzepte (z.B.
+       Mehr-Qubit-Register) später darauf aufbauen können.
+  ================================================================= -->
+  <script>
+  window.addEventListener('DOMContentLoaded', function () {
+
+    /* Statische Formeln rendern, sobald KaTeX da ist — unabhängig von Three.js,
+       damit die Herleitung auch dann lesbar ist, wenn die 3D-Lib mal zickt. */
+    (function whenKatex() {
+      if (!window.katex) return void setTimeout(whenKatex, 40);
+      document.querySelectorAll('[data-tex]').forEach(function (n) {
+        katex.render(n.getAttribute('data-tex'), n, { displayMode: true, throwOnError: false });
+      });
+      document.querySelectorAll('[data-tex-inline]').forEach(function (n) {
+        katex.render(n.getAttribute('data-tex-inline'), n, { displayMode: false, throwOnError: false });
+      });
+    })();
+
+    /* Die interaktive Bühne braucht Three.js + OrbitControls + KaTeX. */
+    function ready() { return window.THREE && window.THREE.OrbitControls && window.katex; }
+    if (!ready()) { return void setTimeout(function w(){ ready() ? boot() : setTimeout(w, 40); }, 40); }
+    boot();
+
+    function boot() {
+
+    /* ============================================================
+       1) KOMPLEXE ZAHLEN + EIN-QUBIT-MATHEMATIK
+       Ein Zustand ist ein Vektor (a, b) mit komplexen Einträgen.
+       Wir halten Real-/Imaginärteil getrennt in [re, im].
+       ============================================================ */
+    const C = {
+      add:  (u, v) => [u[0] + v[0], u[1] + v[1]],
+      mul:  (u, v) => [u[0]*v[0] - u[1]*v[1], u[0]*v[1] + u[1]*v[0]],
+      abs2: (u)    => u[0]*u[0] + u[1]*u[1],
+      arg:  (u)    => Math.atan2(u[1], u[0]),
+      scale:(u, s) => [u[0]*s, u[1]*s],
+    };
+    const SQRT1_2 = Math.SQRT1_2;
+
+    // Ein-Qubit-Gates als 2x2-Matrizen komplexer Einträge [[a,b],[c,d]].
+    // Jeder Eintrag ist ein [re, im]-Paar.
+    const GATES = {
+      H: { m: [[[SQRT1_2,0],[SQRT1_2,0]], [[SQRT1_2,0],[-SQRT1_2,0]]],
+           axis: [SQRT1_2, 0, SQRT1_2], angle: Math.PI,
+           label: 'Hadamard (H)',
+           note: 'dreht 180° um die schräge Achse (X+Z)/√2 — vertauscht die Z- und X-Basis: |0⟩ ↔ |+⟩, |1⟩ ↔ |−⟩.' },
+      X: { m: [[[0,0],[1,0]], [[1,0],[0,0]]],
+           axis: [1,0,0], angle: Math.PI,
+           label: 'Pauli-X',
+           note: 'rotiert 180° um die X-Achse — das Quanten-NOT: vertauscht |0⟩ und |1⟩.' },
+      Y: { m: [[[0,0],[0,-1]], [[0,1],[0,0]]],
+           axis: [0,1,0], angle: Math.PI,
+           label: 'Pauli-Y',
+           note: 'rotiert 180° um die Y-Achse — vertauscht |0⟩ und |1⟩ mit einer zusätzlichen Phase.' },
+      Z: { m: [[[1,0],[0,0]], [[0,0],[-1,0]]],
+           axis: [0,0,1], angle: Math.PI,
+           label: 'Pauli-Z',
+           note: 'rotiert 180° um die Z-Achse — lässt |0⟩/|1⟩ fest, spiegelt aber die Phase: |+⟩ ↔ |−⟩.' },
+      S: { m: [[[1,0],[0,0]], [[0,0],[0,1]]],
+           axis: [0,0,1], angle: Math.PI/2,
+           label: 'S-Gate (Phase π/2)',
+           note: 'rotiert +90° um die Z-Achse — schiebt die Phase φ um π/2: |+⟩ → |+i⟩.' },
+      T: { m: [[[1,0],[0,0]], [[0,0],[Math.cos(Math.PI/4), Math.sin(Math.PI/4)]]],
+           axis: [0,0,1], angle: Math.PI/4,
+           label: 'T-Gate (Phase π/4)',
+           note: 'rotiert +45° um die Z-Achse — schiebt die Phase φ um π/4. Zwei T ergeben ein S.' },
+    };
+
+    // Matrix (2x2) auf Zustand (a,b) anwenden -> neuer Zustand
+    function applyGate(g, st) {
+      const m = g.m;
+      const a = C.add(C.mul(m[0][0], st.a), C.mul(m[0][1], st.b));
+      const b = C.add(C.mul(m[1][0], st.a), C.mul(m[1][1], st.b));
+      return { a, b };
+    }
+
+    /* ============================================================
+       2) ZUSTAND <-> BLOCH-VEKTOR <-> (theta, phi)
+       Konvention (Nielsen & Chuang):
+         |ψ⟩ = cos(θ/2)|0⟩ + e^{iφ} sin(θ/2)|1⟩
+         r = (sinθ cosφ, sinθ sinφ, cosθ)
+         |0⟩ = +z (Nordpol), |1⟩ = −z (Südpol)
+         |+⟩ = +x, |−⟩ = −x, |+i⟩ = +y, |−i⟩ = −y
+       ============================================================ */
+    function stateFromAngles(theta, phi) {
+      return {
+        a: [Math.cos(theta/2), 0],
+        b: [Math.cos(phi)*Math.sin(theta/2), Math.sin(phi)*Math.sin(theta/2)],
+      };
+    }
+    // Kanonische (θ, φ) aus beliebigem Zustand: globale Phase so wählen,
+    // dass die |0⟩-Amplitude reell und >= 0 ist.
+    function anglesFromState(st, prevPhi) {
+      const ra = Math.sqrt(C.abs2(st.a));
+      const rb = Math.sqrt(C.abs2(st.b));
+      const theta = 2 * Math.atan2(rb, ra);      // stabil in [0, π]
+      let phi;
+      if (rb < 1e-9 || ra < 1e-9) {
+        phi = (prevPhi === undefined) ? 0 : prevPhi;   // Pol: φ ist irrelevant
+      } else {
+        phi = C.arg(st.b) - C.arg(st.a);
+        phi = ((phi % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+      }
+      return { theta, phi };
+    }
+    // Bloch-Vektor (Physik-Koordinaten, z = oben)
+    function blochVec(theta, phi) {
+      return [
+        Math.sin(theta)*Math.cos(phi),
+        Math.sin(theta)*Math.sin(phi),
+        Math.cos(theta),
+      ];
+    }
+
+    /* Abbildung Physik-Koordinaten -> Three.js.
+       Three.js hat y = oben. Wir wollen z (Physik) = oben.
+       Mapping (rechtshändig, erhält Orientierung):
+         three.x =  physik.x
+         three.y =  physik.z
+         three.z = -physik.y                                        */
+    function toThree(v) { return new THREE.Vector3(v[0], v[2], -v[1]); }
+
+    /* ============================================================
+       3) THREE.JS — Bloch-Kugel-Szene
+       In eine wiederverwendbare Funktion gekapselt, damit BEIDE
+       Bühnen (Abschnitt c und d) dieselbe Szene teilen können.
+       ============================================================ */
+    function makeBlochScene(container) {
+      const scene  = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      camera.position.set(2.6, 1.9, 3.0);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.rotateSpeed = 0.8;
+      controls.minDistance = 2.2;
+      controls.maxDistance = 7;
+      controls.enablePan = false;
+
+      // Licht — dezent, für die Kugelfläche
+      scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+      const dir = new THREE.DirectionalLight(0xbcd2ff, 0.6);
+      dir.position.set(3, 5, 2); scene.add(dir);
+
+      const R = 1; // Kugelradius
+
+      // --- durchscheinende Kugelfläche (Tiefe/Glanz) ---
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(R, 64, 48),
+        new THREE.MeshPhongMaterial({
+          color: 0x2a3550, transparent: true, opacity: 0.10,
+          shininess: 40, side: THREE.FrontSide,
+        })
+      );
+      scene.add(sphere);
+
+      // --- Grid: Meridiane + Breitenkreise als dezente Linien ---
+      const gridMat = new THREE.LineBasicMaterial({ color: 0x3a4a63, transparent: true, opacity: 0.28 });
+      const gridGroup = new THREE.Group();
+      const SEG = 96;
+      // Breitenkreise
+      for (let k = 1; k < 6; k++) {
+        const lat = -Math.PI/2 + k*(Math.PI/6);
+        const r = Math.cos(lat), y = Math.sin(lat);
+        const pts = [];
+        for (let i = 0; i <= SEG; i++) {
+          const t = i/SEG * Math.PI*2;
+          pts.push(new THREE.Vector3(r*Math.cos(t), y, r*Math.sin(t)));
+        }
+        gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
+      }
+      // Meridiane
+      for (let k = 0; k < 6; k++) {
+        const lon = k*(Math.PI/6);
+        const pts = [];
+        for (let i = 0; i <= SEG; i++) {
+          const t = -Math.PI/2 + i/SEG*Math.PI;
+          const r = Math.cos(t), y = Math.sin(t);
+          pts.push(new THREE.Vector3(r*Math.cos(lon), y, r*Math.sin(lon)));
+        }
+        gridGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), gridMat));
+      }
+      scene.add(gridGroup);
+
+      // --- Äquator etwas betont ---
+      {
+        const pts = [];
+        for (let i = 0; i <= SEG; i++) {
+          const t = i/SEG*Math.PI*2;
+          pts.push(new THREE.Vector3(Math.cos(t), 0, Math.sin(t)));
+        }
+        scene.add(new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(pts),
+          new THREE.LineBasicMaterial({ color: 0x6ea8fe, transparent: true, opacity: 0.4 })
+        ));
+      }
+
+      // --- Achsen (Physik x,y,z) mit Farben aus dem Theme ---
+      function axis(vec, color) {
+        const p = toThree(vec).multiplyScalar(R*1.35);
+        const n = p.clone().multiplyScalar(-1);
+        const g = new THREE.BufferGeometry().setFromPoints([n, p]);
+        return new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
+      }
+      scene.add(axis([1,0,0], 0xff6b6b)); // X
+      scene.add(axis([0,1,0], 0x4fd1c5)); // Y
+      scene.add(axis([0,0,1], 0x6ea8fe)); // Z
+
+      // --- Text-Labels als Sprites (Canvas-Textur) ---
+      function makeLabel(text, color) {
+        const cvs = document.createElement('canvas');
+        const S = 256; cvs.width = cvs.height = S;
+        const ctx = cvs.getContext('2d');
+        ctx.font = 'bold 120px ui-monospace, Menlo, monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = color;
+        ctx.fillText(text, S/2, S/2);
+        const tex = new THREE.CanvasTexture(cvs);
+        tex.anisotropy = 4;
+        const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+        spr.scale.set(0.42, 0.42, 0.42);
+        return spr;
+      }
+      function placeLabel(text, vec, color) {
+        const spr = makeLabel(text, color);
+        spr.position.copy(toThree(vec).multiplyScalar(R*1.52));
+        scene.add(spr);
+      }
+      placeLabel('|0⟩',  [0,0,1],  '#9ec5ff');
+      placeLabel('|1⟩',  [0,0,-1], '#9ec5ff');
+      placeLabel('|+⟩',  [1,0,0],  '#ff9d9d');
+      placeLabel('|−⟩',  [-1,0,0], '#ff9d9d');
+      placeLabel('|+i⟩', [0,1,0],  '#7fe3d8');
+      placeLabel('|−i⟩', [0,-1,0], '#7fe3d8');
+
+      // --- Zustandsvektor als Pfeil ---
+      const arrow = new THREE.ArrowHelper(
+        new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0),
+        R, 0xf6c177, 0.16, 0.09
+      );
+      arrow.line.material.linewidth = 2;
+      scene.add(arrow);
+      // kleine Kugel an der Spitze
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.045, 24, 16),
+        new THREE.MeshBasicMaterial({ color: 0xffe6b0 })
+      );
+      scene.add(tip);
+
+      function setArrow(vec) {
+        const dir = toThree(vec).normalize();
+        arrow.setDirection(dir);
+        tip.position.copy(toThree(vec).multiplyScalar(R));
+      }
+
+      // --- Render-Loop + Resize ---
+      function resize() {
+        const w = container.clientWidth, h = container.clientHeight;
+        if (w === 0 || h === 0) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w/h; camera.updateProjectionMatrix();
+      }
+      const ro = new ResizeObserver(resize); ro.observe(container);
+      resize();
+
+      function loop() {
+        requestAnimationFrame(loop);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      loop();
+
+      return { setArrow, scene, camera };
+    }
+
+    // Zwei Bühnen erstellen (Abschnitt c und d), Zustand teilen sie sich.
+    const sceneC = makeBlochScene(document.getElementById('stage'));
+    const sceneD = makeBlochScene(document.getElementById('stage2'));
+    function setArrowAll(vec) { sceneC.setArrow(vec); sceneD.setArrow(vec); }
+
+    /* ============================================================
+       4) UI-VERDRAHTUNG
+       ============================================================ */
+    const els = {
+      theta:   document.getElementById('theta'),
+      phi:     document.getElementById('phi'),
+      thetaVal:document.getElementById('thetaVal'),
+      phiVal:  document.getElementById('phiVal'),
+      eq:      document.getElementById('stateEq'),
+      p0fill:  document.getElementById('p0fill'),
+      p1fill:  document.getElementById('p1fill'),
+      p0pct:   document.getElementById('p0pct'),
+      p1pct:   document.getElementById('p1pct'),
+      explain: document.getElementById('gateExplain'),
+      gateBtns:document.getElementById('gateButtons'),
+    };
+
+    // Aktueller logischer Zustand (Single Source of Truth): (theta, phi)
+    let theta = parseFloat(els.theta.value);
+    let phi   = parseFloat(els.phi.value);
+
+    function fmt(x, n=3) { return x.toFixed(n); }
+
+    // Live-Zustandsgleichung + Wahrscheinlichkeiten + Pfeil aktualisieren
+    function render() {
+      // Beschriftungen der Regler
+      els.thetaVal.textContent = fmt(theta) + ' rad';
+      els.phiVal.textContent   = fmt(phi) + ' rad';
+
+      // Koeffizienten
+      const c = Math.cos(theta/2), s = Math.sin(theta/2);
+      const p0 = c*c, p1 = s*s;
+
+      // Zustandsgleichung mit konkreten Zahlen als KaTeX
+      const phiStr = fmt(phi, 2);
+      const tex =
+        '|\\psi\\rangle = ' +
+        '\\underbrace{' + fmt(c,3) + '}_{\\cos\\frac{\\theta}{2}}\\,|0\\rangle' +
+        ' + e^{i\\,' + phiStr + '}\\,' +
+        '\\underbrace{' + fmt(s,3) + '}_{\\sin\\frac{\\theta}{2}}\\,|1\\rangle';
+      katex.render(tex, els.eq, { displayMode: false, throwOnError: false });
+
+      // Wahrscheinlichkeitsbalken
+      els.p0fill.style.width = (p0*100).toFixed(1) + '%';
+      els.p1fill.style.width = (p1*100).toFixed(1) + '%';
+      els.p0pct.textContent  = (p0*100).toFixed(1) + '%';
+      els.p1pct.textContent  = (p1*100).toFixed(1) + '%';
+
+      // 3D-Pfeil
+      setArrowAll(blochVec(theta, phi));
+    }
+
+    // Regler -> Zustand
+    els.theta.addEventListener('input', function () { theta = parseFloat(this.value); render(); });
+    els.phi.addEventListener('input',   function () { phi   = parseFloat(this.value); render(); });
+
+    function syncSliders() {
+      els.theta.value = theta;
+      els.phi.value   = phi;
+    }
+
+    /* ============================================================
+       5) GATE-ANIMATION
+       Ein Gate ist eine Rotation der Kugel um seine Achse. Wir
+       drehen den Bloch-Vektor per Quaternion-Slerp von der Identität
+       zur Zielrotation — geometrisch treu, kein Sprung. Der neue
+       (theta, phi) wird EXAKT aus der Matrixanwendung bestimmt.
+       ============================================================ */
+    let animating = false;
+
+    function setGatesEnabled(on) {
+      els.gateBtns.querySelectorAll('button').forEach(b => b.disabled = !on);
+    }
+
+    function applyGateAnimated(key) {
+      if (animating) return;
+      const g = GATES[key];
+
+      // Zielzustand exakt über Matrix bestimmen (inkl. Phasen)
+      const startState = stateFromAngles(theta, phi);
+      const endState   = applyGate(g, startState);
+      const endAngles  = anglesFromState(endState, phi);
+
+      // Rotation als Quaternion um die Gate-Achse (Physik-Koords, in Three-Koords gemappt)
+      const axisThree = toThree(g.axis).normalize();
+      const qEnd = new THREE.Quaternion().setFromAxisAngle(axisThree, g.angle);
+      const qId  = new THREE.Quaternion(); // Identität
+      const startVecThree = toThree(blochVec(theta, phi));
+
+      const DURATION = 620; // ms
+      const t0 = performance.now();
+      animating = true; setGatesEnabled(false);
+
+      function step(now) {
+        let u = Math.min(1, (now - t0) / DURATION);
+        const e = u < 0.5 ? 2*u*u : 1 - Math.pow(-2*u+2, 2)/2; // easeInOutQuad
+        const q = qId.clone().slerp(qEnd, e);
+        const v = startVecThree.clone().applyQuaternion(q);
+        // three-Vektor zurück in Pfeilrichtung (Pfeil erwartet Physik->three via setArrow,
+        // hier setzen wir die three-Richtung direkt über einen kleinen Adapter)
+        sceneC.setArrow(threeToPhysics(v));
+        sceneD.setArrow(threeToPhysics(v));
+        if (u < 1) { requestAnimationFrame(step); }
+        else {
+          // Am Ende: exakten Zustand übernehmen
+          theta = endAngles.theta; phi = endAngles.phi;
+          animating = false; setGatesEnabled(true);
+          syncSliders(); render();
+          els.explain.innerHTML = '<b>' + g.label + '</b> ' + g.note;
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Umkehrung von toThree(): three.js-Vektor -> Physik-Koordinaten
+    function threeToPhysics(v) { return [v.x, -v.z, v.y]; }
+
+    els.gateBtns.querySelectorAll('button').forEach(function (btn) {
+      btn.addEventListener('click', function () { applyGateAnimated(btn.getAttribute('data-gate')); });
+    });
+
+    // Reset-Buttons
+    document.getElementById('btnReset0').addEventListener('click', function () {
+      if (animating) return;
+      theta = 0; phi = 0; syncSliders(); render();
+      els.explain.innerHTML = 'Zurückgesetzt auf <span class="ket">|0⟩</span> (Nordpol, θ = 0).';
+    });
+    document.getElementById('btnResetPlus').addEventListener('click', function () {
+      if (animating) return;
+      theta = Math.PI/2; phi = 0; syncSliders(); render();
+      els.explain.innerHTML = 'Gesetzt auf <span class="ket">|+⟩</span> (Äquator, θ = π/2, φ = 0).';
+    });
+
+    // Erstes Rendern
+    render();
+
+    } // boot()
+  });
+  </script>
+</body>
+</html>

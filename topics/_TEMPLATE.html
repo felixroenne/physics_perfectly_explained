@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<!--
+  ============================================================================
+  VORLAGE FÜR EIN NEUES THEMA
+  ----------------------------------------------------------------------------
+  So legst du eine neue Unterseite an:
+    1. Diese Datei kopieren, z.B.  topics/entanglement.html
+    2. <title>, .eyebrow, <h1> und den Lead-Text anpassen
+    3. Inhalt in die <section>-Blöcke schreiben (Muster: abschnittsweise)
+    4. Auf der Startseite index.html die passende .topic-card von
+       "soon" auf einen echten Link umstellen (href auf die neue Datei).
+
+  Design & Farben kommen komplett aus ../assets/theme.css — nichts kopieren.
+  Formeln: <div class="formula" data-tex="..."></div>  (Block)
+           <span data-tex-inline="..."></span>          (inline)
+  Für eigene Interaktivität eigenes <script> am Seitenende ergänzen.
+  ============================================================================
+-->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEUES THEMA — Physics, Perfectly Explained</title>
+  <meta name="description" content="Kurzbeschreibung des Themas." />
+  <meta name="color-scheme" content="dark" />
+
+  <link rel="stylesheet" href="../assets/theme.css" />
+  <!-- Optional, nur falls Formeln gebraucht werden: -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="wrap-wide">
+      <a class="brand" href="../index.html"><span class="dot"></span><span>Physics, Perfectly Explained</span></a>
+      <nav><a href="../index.html">← Alle Themen</a></nav>
+    </div>
+  </header>
+
+  <section class="wrap" style="padding-top: clamp(2.4rem, 6vw, 4rem);">
+    <p class="eyebrow">Kategorie · Unterthema</p>
+    <h1>Titel des Themas</h1>
+    <p class="lead">
+      Ein bis zwei Sätze, die neugierig machen und die Kernintuition
+      versprechen.
+    </p>
+  </section>
+
+  <hr class="divider" />
+
+  <section class="wrap">
+    <div class="section-head"><span class="num">a</span><h2 style="margin:0;">Erster Abschnitt</h2></div>
+    <p>Fließtext …</p>
+
+    <!-- Beispiel für eine Blockformel -->
+    <div class="formula" data-tex="E = mc^2"></div>
+
+    <div class="callout insight">
+      <strong>Kernidee.</strong> Die eine Sache, die man mitnehmen soll.
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <section class="wrap">
+    <div class="section-head"><span class="num">b</span><h2 style="margin:0;">Zweiter Abschnitt</h2></div>
+    <p>Fließtext …</p>
+  </section>
+
+  <footer class="site-footer">
+    <div class="wrap-wide">
+      <p style="margin:0;"><a href="../index.html">Physics, Perfectly Explained</a></p>
+    </div>
+  </footer>
+
+  <!-- Nur falls Formeln verwendet werden -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      (function whenKatex() {
+        if (!window.katex) return void setTimeout(whenKatex, 40);
+        document.querySelectorAll('[data-tex]').forEach(function (n) {
+          katex.render(n.getAttribute('data-tex'), n, { displayMode: true, throwOnError: false });
+        });
+        document.querySelectorAll('[data-tex-inline]').forEach(function (n) {
+          katex.render(n.getAttribute('data-tex-inline'), n, { displayMode: false, throwOnError: false });
+        });
+      })();
+    });
+  </script>
+</body>
+</html>
