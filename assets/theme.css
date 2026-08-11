@@ -1,0 +1,271 @@
+/* =============================================================================
+   physics_perfectly_explained — Geteiltes Theme
+   -----------------------------------------------------------------------------
+   Ein dunkles, wissenschaftlich-elegantes Theme (Anlehnung an Distill.pub /
+   3Blue1Brown). Alle Farben, Abstände und Typografie-Regeln leben hier, damit
+   neue Themen-Seiten automatisch im selben Stil erscheinen.
+
+   Neue Unterseite anlegen? -> topics/_TEMPLATE.html kopieren. Sie bindet dieses
+   Stylesheet über  <link rel="stylesheet" href="../assets/theme.css">  ein.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ Tokens */
+:root {
+  /* Farbwelt — tiefes Nachtblau statt reinem Schwarz, wirkt hochwertiger */
+  --bg:            #0b0e14;   /* Seitenhintergrund               */
+  --bg-soft:       #121722;   /* Karten / Panels                 */
+  --bg-softer:     #1a2130;   /* Hover / erhöhte Flächen         */
+  --border:        #26304199; /* dezente Trennlinien             */
+  --border-strong: #38445b;
+
+  --text:          #e6ebf4;   /* Fließtext                        */
+  --text-muted:    #9aa7bd;   /* Sekundärtext                     */
+  --text-faint:    #63708a;   /* Beschriftungen, Fußnoten         */
+
+  /* Akzent — kühles Cyan/Violett, gut auf Dunkel lesbar */
+  --accent:        #6ea8fe;   /* Primärakzent (Links, Fokus)      */
+  --accent-2:      #b48ef2;   /* Sekundärakzent (Formeln)         */
+  --accent-3:      #4fd1c5;   /* Erfolg / |0>-Pol                 */
+  --accent-warm:   #f6c177;   /* Hervorhebung / |1>-Pol           */
+
+  /* Achsenfarben — konsistent zwischen 3D-Szene und Text */
+  --axis-x:        #ff6b6b;
+  --axis-y:        #4fd1c5;
+  --axis-z:        #6ea8fe;
+  --state-vec:     #f6c177;
+
+  /* Typografie */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+               Arial, "Inter", sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+                "Times New Roman", serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas,
+               monospace;
+
+  /* Maße */
+  --maxw: 760px;          /* Lesebreite für Fließtext */
+  --maxw-wide: 1180px;    /* Breite Sektionen (Visualisierung) */
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 10px 40px -12px rgba(0, 0, 0, 0.65);
+  --gap: clamp(1rem, 2.5vw, 2rem);
+}
+
+/* ------------------------------------------------------------------ Reset */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 700px at 78% -8%, #16203a 0%, transparent 55%),
+    radial-gradient(900px 600px at 5% 8%, #17132a 0%, transparent 50%),
+    var(--bg);
+  background-attachment: fixed;   /* auf kleinen/Touch-Viewports unten deaktiviert */
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* -------------------------------------------------------------- Typografie */
+h1, h2, h3, h4 {
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #f4f7fc;
+}
+h1 { font-size: clamp(2.1rem, 5vw, 3.2rem); margin: 0 0 0.4em; }
+h2 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); margin: 2.6em 0 0.6em; }
+h3 { font-size: 1.25rem; margin: 2em 0 0.5em; color: #e9eef7; }
+
+p  { margin: 0 0 1.1em; }
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+a:hover { border-bottom-color: var(--accent); }
+
+strong { color: #fff; font-weight: 650; }
+em { color: var(--text); }
+
+.lead {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.76rem;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+code, kbd {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1em 0.4em;
+}
+
+/* Farbige Inline-Marker für die Achsen/Pole, im Text wiederverwendbar */
+.mx { color: var(--axis-x); font-weight: 650; }
+.my { color: var(--axis-y); font-weight: 650; }
+.mz { color: var(--axis-z); font-weight: 650; }
+.ket { font-family: var(--font-mono); color: var(--accent-2); white-space: nowrap; }
+
+/* ------------------------------------------------------------------ Layout */
+.wrap    { width: 100%; max-width: var(--maxw);      margin-inline: auto; padding-inline: clamp(1.1rem, 4vw, 2rem); }
+.wrap-wide { width: 100%; max-width: var(--maxw-wide); margin-inline: auto; padding-inline: clamp(1.1rem, 4vw, 2rem); }
+
+section { padding-block: clamp(2rem, 5vw, 3.4rem); }
+.divider { height: 1px; background: linear-gradient(90deg, transparent, var(--border-strong), transparent); border: 0; margin: 0; }
+
+/* Nummerierte Kapitel-Kopfzeile */
+.section-head { display: flex; align-items: baseline; gap: 0.8rem; }
+.section-head .num {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-size: 0.95rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.15em 0.7em;
+  flex: none;
+}
+
+/* --------------------------------------------------------------- Topbar */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .wrap-wide {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 58px;
+}
+.brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; color: var(--text); border: 0; }
+.brand:hover { color: #fff; }
+.brand .dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--accent-3), var(--accent) 60%, var(--accent-2));
+  box-shadow: 0 0 14px var(--accent);
+}
+.topbar nav { display: flex; gap: 1.2rem; font-size: 0.92rem; }
+.topbar nav a { color: var(--text-muted); border: 0; }
+.topbar nav a:hover { color: var(--text); }
+
+/* ------------------------------------------------------------------ Cards */
+.card {
+  background: linear-gradient(180deg, var(--bg-soft), #0f131d);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* Themen-Gitter auf der Startseite */
+.topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--gap);
+}
+.topic-card {
+  display: flex; flex-direction: column;
+  padding: 1.5rem 1.5rem 1.4rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-soft), #0f131d);
+  color: var(--text);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.topic-card::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent-3), var(--accent), var(--accent-2));
+  opacity: 0.85;
+}
+a.topic-card:hover { transform: translateY(-4px); border-color: var(--border-strong); box-shadow: 0 18px 50px -18px rgba(0,0,0,0.8); }
+.topic-card .tag {
+  font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-faint); font-weight: 650;
+}
+.topic-card h3 { margin: 0.5rem 0 0.4rem; font-size: 1.3rem; }
+.topic-card p  { color: var(--text-muted); font-size: 0.96rem; margin: 0; }
+.topic-card .go { margin-top: auto; padding-top: 1.1rem; color: var(--accent); font-weight: 600; font-size: 0.92rem; }
+.topic-card.soon { opacity: 0.62; cursor: default; }
+.topic-card.soon::before { background: var(--border-strong); }
+.topic-card.soon .go { color: var(--text-faint); }
+
+/* Badge */
+.badge {
+  display: inline-block; font-size: 0.72rem; font-weight: 650;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 0.2em 0.6em; border-radius: 999px;
+  border: 1px solid var(--border-strong); color: var(--text-muted);
+}
+.badge.live { color: var(--accent-3); border-color: color-mix(in srgb, var(--accent-3) 45%, transparent); }
+
+/* ---------------------------------------------------------------- Callouts */
+.callout {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-soft);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  margin: 1.4em 0;
+  color: var(--text-muted);
+}
+.callout.warn   { border-left-color: var(--accent-warm); }
+.callout.insight{ border-left-color: var(--accent-2); }
+.callout strong { color: #fff; }
+.callout .k { font-family: var(--font-mono); }
+
+/* Formelblock, mittig, mit Rahmen — Formel „gehört“ sichtbar zur Erklärung */
+.formula {
+  margin: 1.4em 0;
+  padding: 1rem 1.2rem;
+  background: color-mix(in srgb, var(--bg-soft) 80%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+
+/* ------------------------------------------------------------------ Footer */
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 0.9rem;
+  padding-block: 2.4rem;
+}
+.site-footer a { color: var(--text-muted); }
+
+/* ------------------------------------------------------------------ Utils */
+.center { text-align: center; }
+.mono { font-family: var(--font-mono); }
+.muted { color: var(--text-muted); }
+.stack > * + * { margin-top: 1rem; }
+
+/* background-attachment: fixed ist auf Mobil/Touch (v.a. iOS Safari) teuer
+   (Scroll-/Repaint-Ruckler). Dort auf normales Scrollen zurückfallen. */
+@media (max-width: 768px), (hover: none) {
+  body { background-attachment: scroll; }
+}
+
+/* Reduzierte Bewegung respektieren */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
