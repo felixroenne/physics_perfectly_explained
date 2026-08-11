@@ -37,7 +37,7 @@
       border-radius: var(--radius);
       border: 1px solid var(--border);
       background:
-        radial-gradient(120% 120% at 50% 0%, #131a2b 0%, #0a0d14 70%);
+        radial-gradient(120% 120% at 50% 0%, #141416 0%, #050506 72%);
       overflow: hidden;
     }
     .stage canvas { display: block; width: 100%; height: 100%; }
@@ -78,9 +78,8 @@
     input[type="range"] {
       -webkit-appearance: none; appearance: none;
       width: 100%; height: 6px; border-radius: 999px;
-      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 100%);
+      background: var(--border-strong);   /* schlichte graue Schiene, Akzent nur am Griff */
       outline: none; cursor: pointer;
-      opacity: 0.92;
     }
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none; appearance: none;
@@ -105,8 +104,8 @@
       overflow: hidden;
     }
     .prob .fill { height: 100%; width: 0%; border-radius: 999px; transition: width 0.12s linear; }
-    .prob.p0 .fill { background: var(--accent-3); }
-    .prob.p1 .fill { background: var(--accent-warm); }
+    .prob.p0 .fill { background: #ededf0; }   /* |0>: hell */
+    .prob.p1 .fill { background: #85858b; }   /* |1>: gedämpftes Grau */
     .prob .pct { text-align: right; font-family: var(--font-mono); color: var(--text); }
 
     /* Gate-Buttons */
@@ -124,7 +123,7 @@
       transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
     }
     .gate-btn small { display: block; font-family: var(--font-sans); font-size: 0.66rem; font-weight: 500; color: var(--text-faint); margin-top: 2px; letter-spacing: 0.02em; }
-    .gate-btn:hover { border-color: var(--accent); transform: translateY(-2px); background: #202a3c; }
+    .gate-btn:hover { border-color: var(--accent); transform: translateY(-2px); background: #1b1b1e; }
     .gate-btn:active { transform: translateY(0); }
     .gate-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
 
@@ -656,7 +655,7 @@
 
       // Licht — dezent, für die Kugelfläche
       scene.add(new THREE.AmbientLight(0xffffff, 0.75));
-      const dir = new THREE.DirectionalLight(0xbcd2ff, 0.6);
+      const dir = new THREE.DirectionalLight(0xffffff, 0.6);
       dir.position.set(3, 5, 2); scene.add(dir);
 
       const R = 1; // Kugelradius
@@ -665,14 +664,14 @@
       const sphere = new THREE.Mesh(
         new THREE.SphereGeometry(R, 64, 48),
         new THREE.MeshPhongMaterial({
-          color: 0x2a3550, transparent: true, opacity: 0.10,
+          color: 0x1a1a1c, transparent: true, opacity: 0.12,
           shininess: 40, side: THREE.FrontSide,
         })
       );
       scene.add(sphere);
 
       // --- Grid: Meridiane + Breitenkreise als dezente Linien ---
-      const gridMat = new THREE.LineBasicMaterial({ color: 0x3a4a63, transparent: true, opacity: 0.28 });
+      const gridMat = new THREE.LineBasicMaterial({ color: 0x4a4a50, transparent: true, opacity: 0.26 });
       const gridGroup = new THREE.Group();
       const SEG = 96;
       // Breitenkreise
@@ -708,7 +707,7 @@
         }
         scene.add(new THREE.Line(
           new THREE.BufferGeometry().setFromPoints(pts),
-          new THREE.LineBasicMaterial({ color: 0x6ea8fe, transparent: true, opacity: 0.4 })
+          new THREE.LineBasicMaterial({ color: 0xbdbdc2, transparent: true, opacity: 0.34 })
         ));
       }
 
@@ -719,9 +718,11 @@
         const g = new THREE.BufferGeometry().setFromPoints([n, p]);
         return new THREE.Line(g, new THREE.LineBasicMaterial({ color }));
       }
-      scene.add(axis([1,0,0], 0xff6b6b)); // X
-      scene.add(axis([0,1,0], 0x4fd1c5)); // Y
-      scene.add(axis([0,0,1], 0x6ea8fe)); // Z
+      // Monochrom — Achsen-Identität tragen die Labels, nicht die Farbe.
+      // Z (vertikal) etwas heller als optische Referenzachse.
+      scene.add(axis([1,0,0], 0x8d8d92)); // X
+      scene.add(axis([0,1,0], 0x8d8d92)); // Y
+      scene.add(axis([0,0,1], 0xededf0)); // Z
 
       // --- Text-Labels als Sprites (Canvas-Textur) ---
       function makeLabel(text, color) {
@@ -743,24 +744,24 @@
         spr.position.copy(toThree(vec).multiplyScalar(R*1.52));
         scene.add(spr);
       }
-      placeLabel('|0⟩',  [0,0,1],  '#9ec5ff');
-      placeLabel('|1⟩',  [0,0,-1], '#9ec5ff');
-      placeLabel('|+⟩',  [1,0,0],  '#ff9d9d');
-      placeLabel('|−⟩',  [-1,0,0], '#ff9d9d');
-      placeLabel('|+i⟩', [0,1,0],  '#7fe3d8');
-      placeLabel('|−i⟩', [0,-1,0], '#7fe3d8');
+      placeLabel('|0⟩',  [0,0,1],  '#f4f4f6');   // Pole hell
+      placeLabel('|1⟩',  [0,0,-1], '#f4f4f6');
+      placeLabel('|+⟩',  [1,0,0],  '#c4c4c9');   // Äquator gedämpft grau
+      placeLabel('|−⟩',  [-1,0,0], '#c4c4c9');
+      placeLabel('|+i⟩', [0,1,0],  '#c4c4c9');
+      placeLabel('|−i⟩', [0,-1,0], '#c4c4c9');
 
       // --- Zustandsvektor als Pfeil ---
       const arrow = new THREE.ArrowHelper(
         new THREE.Vector3(0,1,0), new THREE.Vector3(0,0,0),
-        R, 0xf6c177, 0.16, 0.09
+        R, 0xe6b566, 0.16, 0.09
       );
       arrow.line.material.linewidth = 2;
       scene.add(arrow);
       // kleine Kugel an der Spitze
       const tip = new THREE.Mesh(
         new THREE.SphereGeometry(0.045, 24, 16),
-        new THREE.MeshBasicMaterial({ color: 0xffe6b0 })
+        new THREE.MeshBasicMaterial({ color: 0xf2cd8f })
       );
       scene.add(tip);
 

@@ -11,28 +11,32 @@
 
 /* ------------------------------------------------------------------ Tokens */
 :root {
-  /* Farbwelt — tiefes Nachtblau statt reinem Schwarz, wirkt hochwertiger */
-  --bg:            #0b0e14;   /* Seitenhintergrund               */
-  --bg-soft:       #121722;   /* Karten / Panels                 */
-  --bg-softer:     #1a2130;   /* Hover / erhöhte Flächen         */
-  --border:        #26304199; /* dezente Trennlinien             */
-  --border-strong: #38445b;
+  /* Farbwelt — schlicht schwarz-weiß. Grundgerüst ist rein monochrom;
+     Farbe kommt NUR als einzelner Akzent (--accent) dazu, und zwar nur da,
+     wo sie wirklich etwas hervorhebt (v.a. der Zustandsvektor). */
+  --bg:            #000000;   /* Seitenhintergrund (schwarz)     */
+  --bg-soft:       #0c0c0d;   /* Karten / Panels                 */
+  --bg-softer:     #161617;   /* Hover / erhöhte Flächen         */
+  --border:        #ffffff1f; /* dezente weiße Trennlinien       */
+  --border-strong: #ffffff3d;
 
-  --text:          #e6ebf4;   /* Fließtext                        */
-  --text-muted:    #9aa7bd;   /* Sekundärtext                     */
-  --text-faint:    #63708a;   /* Beschriftungen, Fußnoten         */
+  --text:          #f5f5f6;   /* Fließtext (fast weiß)           */
+  --text-muted:    #a9a9ad;   /* Sekundärtext (Grau)             */
+  --text-faint:    #6b6b70;   /* Beschriftungen, Fußnoten        */
 
-  /* Akzent — kühles Cyan/Violett, gut auf Dunkel lesbar */
-  --accent:        #6ea8fe;   /* Primärakzent (Links, Fokus)      */
-  --accent-2:      #b48ef2;   /* Sekundärakzent (Formeln)         */
-  --accent-3:      #4fd1c5;   /* Erfolg / |0>-Pol                 */
-  --accent-warm:   #f6c177;   /* Hervorhebung / |1>-Pol           */
+  /* Der EINE Akzent — sparsam, nur zum Hervorheben. Warmes Bernstein,
+     das auf reinem Schwarz-Weiß klar als „hier passiert etwas“ liest. */
+  --accent:        #e6b566;   /* Highlight: Zustandsvektor, Fokus, aktiv */
+  --accent-2:      #e6b566;   /* (bewusst identisch — nur ein Akzent)    */
+  --accent-3:      #d4d4d8;   /* ehem. „Erfolg“ -> helles Grau           */
+  --accent-warm:   #e6b566;
 
-  /* Achsenfarben — konsistent zwischen 3D-Szene und Text */
-  --axis-x:        #ff6b6b;
-  --axis-y:        #4fd1c5;
-  --axis-z:        #6ea8fe;
-  --state-vec:     #f6c177;
+  /* Achsen — monochrom; Identität tragen die |0>/|+>/… Labels, nicht Farbe.
+     Z (vertikal) etwas heller als Referenzachse. */
+  --axis-x:        #8d8d92;
+  --axis-y:        #8d8d92;
+  --axis-z:        #ededf0;
+  --state-vec:     #e6b566;   /* der einzige farbige Akzent im 3D */
 
   /* Typografie */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -61,8 +65,7 @@ html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 700px at 78% -8%, #16203a 0%, transparent 55%),
-    radial-gradient(900px 600px at 5% 8%, #17132a 0%, transparent 50%),
+    radial-gradient(1100px 650px at 80% -10%, #ffffff0a 0%, transparent 55%),
     var(--bg);
   background-attachment: fixed;   /* auf kleinen/Touch-Viewports unten deaktiviert */
   color: var(--text);
@@ -87,12 +90,12 @@ h3 { font-size: 1.25rem; margin: 2em 0 0.5em; color: #e9eef7; }
 p  { margin: 0 0 1.1em; }
 
 a {
-  color: var(--accent);
+  color: var(--text);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
+  border-bottom: 1px solid var(--border-strong);
   transition: border-color 0.15s ease, color 0.15s ease;
 }
-a:hover { border-bottom-color: var(--accent); }
+a:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
 strong { color: #fff; font-weight: 650; }
 em { color: var(--text); }
@@ -108,7 +111,7 @@ em { color: var(--text); }
   letter-spacing: 0.18em;
   font-size: 0.76rem;
   font-weight: 650;
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
 code, kbd {
@@ -124,7 +127,7 @@ code, kbd {
 .mx { color: var(--axis-x); font-weight: 650; }
 .my { color: var(--axis-y); font-weight: 650; }
 .mz { color: var(--axis-z); font-weight: 650; }
-.ket { font-family: var(--font-mono); color: var(--accent-2); white-space: nowrap; }
+.ket { font-family: var(--font-mono); color: var(--text); white-space: nowrap; }
 
 /* ------------------------------------------------------------------ Layout */
 .wrap    { width: 100%; max-width: var(--maxw);      margin-inline: auto; padding-inline: clamp(1.1rem, 4vw, 2rem); }
@@ -137,7 +140,7 @@ section { padding-block: clamp(2rem, 5vw, 3.4rem); }
 .section-head { display: flex; align-items: baseline; gap: 0.8rem; }
 .section-head .num {
   font-family: var(--font-mono);
-  color: var(--accent);
+  color: var(--text-muted);
   font-size: 0.95rem;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
@@ -159,9 +162,8 @@ section { padding-block: clamp(2rem, 5vw, 3.4rem); }
 .brand { display: flex; align-items: center; gap: 0.6rem; font-weight: 600; color: var(--text); border: 0; }
 .brand:hover { color: #fff; }
 .brand .dot {
-  width: 12px; height: 12px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, var(--accent-3), var(--accent) 60%, var(--accent-2));
-  box-shadow: 0 0 14px var(--accent);
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--accent);   /* einziger Farbtupfer in der Kopfzeile */
 }
 .topbar nav { display: flex; gap: 1.2rem; font-size: 0.92rem; }
 .topbar nav a { color: var(--text-muted); border: 0; }
@@ -193,11 +195,12 @@ section { padding-block: clamp(2rem, 5vw, 3.4rem); }
   overflow: hidden;
 }
 .topic-card::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 3px;
-  background: linear-gradient(90deg, var(--accent-3), var(--accent), var(--accent-2));
-  opacity: 0.85;
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: var(--border-strong);       /* dezente weiße Kante */
+  transition: background 0.18s ease;
 }
 a.topic-card:hover { transform: translateY(-4px); border-color: var(--border-strong); box-shadow: 0 18px 50px -18px rgba(0,0,0,0.8); }
+a.topic-card:hover::before { background: var(--accent); }   /* Akzent nur im Hover */
 .topic-card .tag {
   font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--text-faint); font-weight: 650;
@@ -216,12 +219,12 @@ a.topic-card:hover { transform: translateY(-4px); border-color: var(--border-str
   padding: 0.2em 0.6em; border-radius: 999px;
   border: 1px solid var(--border-strong); color: var(--text-muted);
 }
-.badge.live { color: var(--accent-3); border-color: color-mix(in srgb, var(--accent-3) 45%, transparent); }
+.badge.live { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 
 /* ---------------------------------------------------------------- Callouts */
 .callout {
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--border-strong);
   background: var(--bg-soft);
   border-radius: var(--radius-sm);
   padding: 1rem 1.2rem;
